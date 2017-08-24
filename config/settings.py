@@ -9,28 +9,36 @@ https://docs.djangoproject.com/en/1.11/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
+from __future__ import absolute_import
+from environ import Path, Env
 
-import os
+#####################################
+# LOCAL VARS
+#####################################
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '3@uob#gh%bxvl$@ad5qaep@9o)&-+w&w3hp75rlh!7h5i656f)'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+ROOT_DIR = Path(__file__) - 2
+APPS_DIR = ROOT_DIR.path('apps')
+environ = Env()
 
 
-# Application definition
+#####################################
+# SECURITY SETTINGS
+#####################################
 
-INSTALLED_APPS = [
+SECRET_KEY = environ('DJANGO_SECRET_KEY', default='CHANGEME!!!')
+
+DEBUG = environ.bool('DJANGO_DEBUG', False)
+
+ALLOWED_HOSTS = environ.list(
+    'DJANGO_ALLOWED_HOSTS',
+    default=['www.yourdomain.com'])
+
+
+#####################################
+# INSTALLED APPS
+#####################################
+
+DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -38,6 +46,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+THIRD_PARTY_APPS = [
+    'gunicorn',
+]
+
+LOCAL_APPS = []
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+#####################################
+# APPLICATION SETTINGS
+#####################################
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -54,7 +74,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [str(ROOT_DIR.path('templates'))],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -70,15 +90,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/1.11/ref/settings/#databases
+#####################################
+# DATABASE SETTINGS
+#####################################
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    'default': environ.db('DATABASE_URL'),
 }
+DATABASES['default']['ATOMIC_REQUESTS'] = True
 
 
 # Password validation
@@ -100,12 +119,13 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/1.11/topics/i18n/
+#####################################
+# INTERNATIONALIZATION SETTINGS
+#####################################
 
-LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'America/Recife'
 
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'pt-BR'
 
 USE_I18N = True
 
@@ -113,8 +133,34 @@ USE_L10N = True
 
 USE_TZ = True
 
+DATE_FORMAT = 'd/m/Y'
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.11/howto/static-files/
+DATETIME_FORMAT = 'd-m-Y H:i:S'
+
+DECIMAL_SEPARATOR = ','
+
+THOUSAND_SEPARATOR = '.'
+
+
+#####################################
+# STATIC AND MEDIA SETTINGS
+#####################################
+
+MEDIA_ROOT = str(ROOT_DIR('media'))
+
+MEDIA_URL = '/media/'
+
+STATIC_ROOT = str(ROOT_DIR('staticfiles'))
 
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = (
+    str(ROOT_DIR.path('static')),
+)
+
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+)
+
+ADMIN_URL = environ('DJANGO_ADMIN_URL')
