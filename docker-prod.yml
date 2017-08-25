@@ -1,0 +1,87 @@
+version: '2'
+
+volumes:
+    webserver_staticfiles: {}
+    webserver_media: {}
+services:
+
+    database:
+        restart: always
+        image: postgres:9.6
+        container_name: database
+        env_file:
+            - ./compose/environ/prod.env
+        expose:
+            - 5432
+
+    rabbitmq:
+        image: rabbitmq:3-management
+        restart: on-failure
+        container_name: rabbitmq
+        env_file:
+            - ./compose/environ/prod.env
+        expose:
+            - 5672
+            - 15672
+
+    webserver:
+        image: django-docker-bootstrap
+        container_name: webserver
+        build:
+            context: .
+            dockerfile: ./compose/django/Dockerfile
+        links:
+            - database
+        depends_on:
+            - database
+        env_file:
+            - ./compose/environ/prod.env
+        volumes:
+            - webserver_staticfiles:/app/staticfiles
+            - webserver_media:/app/media
+        command: /gunicorn.sh
+
+    worker:
+        image: django-docker-bootstrap
+        depends_on:
+            - webserver
+        container_name: worker
+        user: django
+        volumes:
+            - webserver_staticfiles:/app/staticfiles
+            - webserver_media:/app/media
+        env_file:
+            - ./compose/environ/prod.env
+        links:
+            - rabbitmq
+        command: celery -A config.celery_app worker -n worker -c 2 -Q default -l INFO
+
+
+    nginx:
+        image: django-docker-bootstrap-nginx
+        build: ./compose/nginx
+        container_name: nginx
+        links:
+            - webserver
+        volumes:
+            - webserver_staticfiles:/www/static/
+            - webserver_media:/www/media/
+        ports:
+            - 80:80
+
+    flower:
+        restart: always
+        image: django-docker-bootstrap
+        container_name: flower
+        user: django
+        environment:
+            DOCKER_TLS_VERIFY: 'false'
+        env_file:
+            - ./compose/environ/prod.env
+        command: celery flower --port=5757 --basic_auth=admin:flower
+        expose:
+            - "5757"
+        ports:
+            - "5757:5757"
+        links:
+            - rabbitmq

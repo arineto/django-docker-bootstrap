@@ -1,0 +1,15 @@
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://webserver:8000/;
+    }
+
+    location /static/ {
+        alias   /www/static/;
+    }
+
+    location /media/ {
+        alias   /www/media/;
+    }
+}

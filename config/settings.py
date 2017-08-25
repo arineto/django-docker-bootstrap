@@ -164,3 +164,7 @@ STATICFILES_FINDERS = (
 )
 
 ADMIN_URL = environ('DJANGO_ADMIN_URL')
+
+# Celery
+BROKER_URL = environ('CELERY_BROKER_URL', default='django://')
+from .celery_conf import *  # noqa

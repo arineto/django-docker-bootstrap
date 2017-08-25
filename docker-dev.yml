@@ -12,7 +12,7 @@ services:
             - 5432
 
     webserver:
-        image: python:3.6
+        image: django-docker-bootstrap
         container_name: webserver
         build:
             context: .
